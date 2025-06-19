@@ -1,14 +1,14 @@
 [
   {
     "targetIndex": 0,
-    "videoUrl": "https://yourserver.com/videos/video1.mp4"
+    "videoUrl": "https://testingteam121.github.io/WebAr/videos/video1.mp4"
   },
   {
     "targetIndex": 1,
-    "videoUrl": "https://yourserver.com/videos/video2.mp4"
+    "videoUrl": "https://testingteam121.github.io/WebAr/videos/video2.mp4"
   },
   {
     "targetIndex": 2,
-    "videoUrl": "https://yourserver.com/videos/video3.mp4"
+    "videoUrl": "https://testingteam121.github.io/WebAr/videos/video1.mp3"
   }
 ]
