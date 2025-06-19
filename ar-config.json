@@ -1,0 +1,14 @@
+[
+  {
+    "targetIndex": 0,
+    "videoUrl": "https://yourserver.com/videos/video1.mp4"
+  },
+  {
+    "targetIndex": 1,
+    "videoUrl": "https://yourserver.com/videos/video2.mp4"
+  },
+  {
+    "targetIndex": 2,
+    "videoUrl": "https://yourserver.com/videos/video3.mp4"
+  }
+]
