@@ -1,126 +1,110 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>WebAR Experience</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      body { margin: 0; overflow: hidden; }
-      #startButton {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: black;
-        color: white;
-        font-size: 2em;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Tap to Start -->
-    <div id="startButton">Tap to Start AR</div>
+<body>
+  <div id="startButton" style="display:none;">Tap to Start AR</div>
+  <div id="permissionNotice" style="position: absolute; width: 100%; height: 100%; background: black; color: white; font-size: 1.5em; display: flex; justify-content: center; align-items: center;">
+    Allow camera access to continue...
+  </div>
 
-    <!-- A-Frame Scene -->
-    <a-scene
-      id="scene"
-      mindar-image="imageTargetSrc: ./targets/targets.mind; autoStart: false;"
-      embedded
-      color-space="sRGB"
-      renderer="colorManagement: true"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
-    >
-      <a-assets id="assetContainer"></a-assets>
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    </a-scene>
+  <a-scene
+    id="scene"
+    mindar-image="imageTargetSrc: /WebAr/targets/targets.mind; autoStart: false;"
+    embedded
+    color-space="sRGB"
+    renderer="colorManagement: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+  >
+    <a-assets id="assetContainer"></a-assets>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  </a-scene>
 
-    <script>
-      const startButton = document.getElementById('startButton');
-      const scene = document.querySelector('a-scene');
-      const assets = document.getElementById('assetContainer');
+  <script>
+    const startButton = document.getElementById('startButton');
+    const permissionNotice = document.getElementById('permissionNotice');
+    const scene = document.querySelector('a-scene');
+    const assets = document.getElementById('assetContainer');
 
-      const configUrl = "./ar-config.json"; // Local or remote JSON file
+    const configUrl = "/WebAr/ar-config.json"; // Adjust if needed
 
-      async function loadARContent() {
-        const response = await fetch(configUrl);
-        const targets = await response.json();
-
-        const videos = [];
-
-        targets.forEach(({ targetIndex, videoUrl }) => {
-          const videoId = `video${targetIndex}`;
-          const aVideoId = `avideo${targetIndex}`;
-
-          // Create video element
-          const video = document.createElement("video");
-          video.setAttribute("id", videoId);
-          video.setAttribute("src", videoUrl);
-          video.setAttribute("preload", "auto");
-          video.setAttribute("playsinline", "");
-          video.setAttribute("crossorigin", "anonymous");
-          assets.appendChild(video);
-          videos[targetIndex] = video;
-
-          // Create AR entity
-          const entity = document.createElement("a-entity");
-          entity.setAttribute("mindar-image-target", `targetIndex: ${targetIndex}`);
-
-          const aVideo = document.createElement("a-video");
-          aVideo.setAttribute("id", aVideoId);
-          aVideo.setAttribute("src", `#${videoId}`);
-          aVideo.setAttribute("width", "1.2");
-          aVideo.setAttribute("height", "0.675");
-          aVideo.setAttribute("position", "0 0 0");
-
-          entity.appendChild(aVideo);
-          scene.appendChild(entity);
-        });
-
-        // Add target found/lost event handling
-        scene.addEventListener("targetFound", (e) => {
-          const index = e.detail.index;
-          videos.forEach((v, i) => {
-            if (i === index) {
-              v.play().catch(console.warn);
-            } else {
-              v.pause();
-            }
-          });
-        });
-
-        scene.addEventListener("targetLost", (e) => {
-          const index = e.detail.index;
-          videos[index].pause();
-        });
-
-        return videos;
-      }
-
-      // Wait for user interaction to start AR
-      startButton.addEventListener("click", async () => {
-        startButton.style.display = "none";
-
-        const videos = await loadARContent();
-
-        // Preload & unmute videos
-        for (let v of videos) {
-          v.muted = false;
-          v.pause();
-        }
-
-        try {
-          await scene.components['mindar-image'].start();
-        } catch (err) {
-          alert("❌ Failed to start AR. Check camera permissions and try again.");
-          console.error(err);
-        }
+    // Step 1: Ask for camera permission immediately
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(() => {
+        console.log("✅ Camera permission granted");
+        permissionNotice.style.display = "none";
+        startButton.style.display = "flex";
+      })
+      .catch((err) => {
+        console.error("❌ Camera permission denied:", err);
+        permissionNotice.innerText = "Camera access denied. Please reload and allow permission.";
       });
-    </script>
-  </body>
-</html>
+
+    async function loadARContent() {
+      const response = await fetch(configUrl);
+      const targets = await response.json();
+
+      const videos = [];
+
+      targets.forEach(({ targetIndex, videoUrl }) => {
+        const videoId = `video${targetIndex}`;
+        const aVideoId = `avideo${targetIndex}`;
+
+        const video = document.createElement("video");
+        video.setAttribute("id", videoId);
+        video.setAttribute("src", videoUrl);
+        video.setAttribute("preload", "auto");
+        video.setAttribute("playsinline", "");
+        video.setAttribute("crossorigin", "anonymous");
+        assets.appendChild(video);
+        videos[targetIndex] = video;
+
+        const entity = document.createElement("a-entity");
+        entity.setAttribute("mindar-image-target", `targetIndex: ${targetIndex}`);
+
+        const aVideo = document.createElement("a-video");
+        aVideo.setAttribute("id", aVideoId);
+        aVideo.setAttribute("src", `#${videoId}`);
+        aVideo.setAttribute("width", "1.2");
+        aVideo.setAttribute("height", "0.675");
+        aVideo.setAttribute("position", "0 0 0");
+
+        entity.appendChild(aVideo);
+        scene.appendChild(entity);
+      });
+
+      scene.addEventListener("targetFound", (e) => {
+        const index = e.detail.index;
+        videos.forEach((v, i) => {
+          if (i === index) {
+            v.play().catch(console.warn);
+          } else {
+            v.pause();
+          }
+        });
+      });
+
+      scene.addEventListener("targetLost", (e) => {
+        const index = e.detail.index;
+        videos[index].pause();
+      });
+
+      return videos;
+    }
+
+    startButton.addEventListener("click", async () => {
+      startButton.style.display = "none";
+
+      const videos = await loadARContent();
+
+      for (let v of videos) {
+        v.muted = false;
+        v.pause();
+      }
+
+      try {
+        await scene.components['mindar-image'].start();
+      } catch (err) {
+        alert("❌ Failed to start AR. Check camera permission and try again.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
