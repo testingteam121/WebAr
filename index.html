@@ -1,0 +1,112 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      #startButton {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: black;
+        color: white;
+        font-size: 2em;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startButton">Tap to Start AR</div>
+
+    <a-scene
+      id="scene"
+      mindar-image="imageTargetSrc: https://yourserver.com/targets/targets.mind; autoStart: false;"
+      embedded
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+    >
+      <a-assets id="assetContainer"></a-assets>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    </a-scene>
+
+    <script>
+      const startButton = document.getElementById('startButton');
+      const scene = document.querySelector('a-scene');
+      const assets = document.getElementById('assetContainer');
+
+      const configUrl = "https://yourserver.com/ar-config.json"; // JSON config
+
+      async function loadARContent() {
+        const response = await fetch(configUrl);
+        const targets = await response.json();
+
+        const videos = [];
+
+        // Dynamically create video assets and AR entities
+        targets.forEach(({ targetIndex, videoUrl }) => {
+          const videoId = `video${targetIndex}`;
+          const aVideoId = `avideo${targetIndex}`;
+
+          // 1. Add video to assets
+          const video = document.createElement("video");
+          video.setAttribute("id", videoId);
+          video.setAttribute("src", videoUrl);
+          video.setAttribute("preload", "auto");
+          video.setAttribute("playsinline", "");
+          video.setAttribute("crossorigin", "anonymous");
+          assets.appendChild(video);
+          videos[targetIndex] = video;
+
+          // 2. Create AR entity for this target
+          const entity = document.createElement("a-entity");
+          entity.setAttribute("mindar-image-target", `targetIndex: ${targetIndex}`);
+
+          const aVideo = document.createElement("a-video");
+          aVideo.setAttribute("id", aVideoId);
+          aVideo.setAttribute("src", `#${videoId}`);
+          aVideo.setAttribute("width", "1.2");
+          aVideo.setAttribute("height", "0.675");
+          aVideo.setAttribute("position", "0 0 0");
+
+          entity.appendChild(aVideo);
+          scene.appendChild(entity);
+        });
+
+        // Track visibility and play/pause correct video
+        scene.addEventListener("targetFound", (e) => {
+          const index = e.detail.index;
+          videos.forEach((v, i) => {
+            if (i === index) {
+              v.play().catch(console.warn);
+            } else {
+              v.pause();
+            }
+          });
+        });
+
+        scene.addEventListener("targetLost", (e) => {
+          const index = e.detail.index;
+          videos[index].pause();
+        });
+
+        return videos;
+      }
+
+      startButton.addEventListener('click', async () => {
+        startButton.style.display = 'none';
+
+        const videos = await loadARContent();
+
+        for (let v of videos) {
+          v.muted = false;
+          v.pause();
+        }
+
+        await scene.components['mindar-image'].start();
+      });
+    </script>
+  </body>
+</html>
