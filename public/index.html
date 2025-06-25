@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload AR Marker</title>
+</head>
+<body>
+  <h2>Upload Image & Video for AR</h2>
+  <form action="/upload" method="POST" enctype="multipart/form-data">
+    <label>Image Marker:</label>
+    <input type="file" name="markerImage" accept="image/*" required><br><br>
+    <label>AR Video:</label>
+    <input type="file" name="videoFile" accept="video/*" required><br><br>
+    <button type="submit">Upload</button>
+  </form>
+</body>
+</html>
